@@ -4,11 +4,11 @@ from dateutil.parser import parse
 import pandas as pd
 import re 
 
-def ical_to_df(ical_fn : str, start : datetime.date = None, end : datetime.date = None):
+def ical_to_df(ical_str : str, start : datetime.date = None, end : datetime.date = None):
     start = datetime.date.today() if start is None else start # default to today
     end = parse("Jun 30 2022") if end is None else end # default to end of the academic year 
 
-    es = events(file=ical_fn, start=start, end=end)
+    es = events(string_content=ical_str, start=start, end=end)
 
     dicts = [e.__dict__ for e in es]
     df = pd.DataFrame(dicts)
