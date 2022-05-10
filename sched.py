@@ -7,9 +7,14 @@ import pytz
 
 import urllib.request
 
-CALENDAR_URL = 'http://www.shiftadmin.com/schedule_ical_group.php?cd=UIwfTiYhARsmldQIKdk1addmZLRORGLhbHKREh1COb8%3D&gfs=g9,f1,f2,f3&local=1&vc=1'
+# CALENDAR_URL = 'http://www.shiftadmin.com/schedule_ical_group.php?cd=UIwfTiYhARsmldQIKdk1addmZLRORGLhbHKREh1COb8%3D&gfs=g9,f1,f2,f3&local=1&vc=1'
 
-s = urllib.request.urlopen(CALENDAR_URL).read()
+# s = urllib.request.urlopen(CALENDAR_URL).read()
+
+# patch over with no internet connection
+with open('schedule.ics') as f:
+    s = bytes(f.read(), encoding='utf-8')
+
 
 # Read in schedule
 sched = parse_sched.ical_to_df(s,
@@ -50,10 +55,6 @@ fs['end_day'] = fs['end'].dt.dayofyear
 fs['start_hour'] = fs['start'].dt.hour
 fs['end_hour'] = fs['end'].dt.hour
 
-# for debugging
-st.markdown('# Filtered Schedule')
-fs
-
 # Build a matrix where rows are residents and columns are hours
 # 0-hour/column is the first hour (midnight) of start_dt
 # the value of the matrix at res,hr is 1 if the resident is working
@@ -77,27 +78,44 @@ hdf = hdf.T # transpose for convenience
 # filter to include only the selected times
 hdf = hdf[st_time:en_time]
 
-hdf['n_working'] = hdf.sum(1) # column with number of res working in time period
+
+# for each hour-long time period, sum the number of selected residents working 
+# during the time period
+hdf['n_working'] = hdf.sum(1)
 hdf.index.name = 'time'
-hdf = hdf.reset_index(drop=False).sort_values(['n_working','time'])
-hdf = hdf.set_index('time')
-# hdf = hdf.drop('n_working', axis=1)
-st.markdown('# Hourly Matrix')
+hdf = hdf[['n_working']] # filter to only be the aggregated column
+hdf['dayofyear'] = [f'{i.month}/{i.day}' for i in hdf.index]
+hdf['hour'] = hdf.index.hour
 
-hdf = hdf.reset_index(drop=False)
-hdf['diff'] = hdf['time'].diff()
-hdf['contig'] = hdf['diff'].apply(lambda x: x.total_seconds() <= 60*60 if type(x) is not type(pd.NaT) else True)
-hdf.drop('diff',axis=1,inplace=True)
-# hdf = hdf.set_index('time')
+# reformat - now rows are hours in the selcted interval and columns
+# are the individual days, with cells the number of free residents
+# similar to a doodle poll
+free_mat = hdf.pivot(columns='dayofyear', index='hour')
+free_mat.columns = free_mat.columns.droplevel(0)
+free_mat.columns.name = 'Date'
+free_mat.index.name = 'Time'
+free_mat = len(resident_choices) - free_mat
+st.dataframe(free_mat)
+    
 
-i = 0
-res = []
-for c in hdf['contig']:
-    if c: res.append(i)
-    else:
-        i += 1
-        res.append(i)
-hdf['grp'] = res
 
-#TODO groupby
-hdf
+# # hdf = hdf.drop('n_working', axis=1)
+# st.markdown('# Hourly Matrix')
+
+# hdf = hdf.reset_index(drop=False)
+# hdf['diff'] = hdf['time'].diff()
+# hdf['contig'] = hdf['diff'].apply(lambda x: x.total_seconds() <= 60*60 if type(x) is not type(pd.NaT) else True)
+# hdf.drop('diff',axis=1,inplace=True)
+# # hdf = hdf.set_index('time')
+
+# i = 0
+# res = []
+# for c in hdf['contig']:
+#     if c: res.append(i)
+#     else:
+#         i += 1
+#         res.append(i)
+# hdf['grp'] = res
+
+# #TODO groupby
+# hdf
