@@ -96,26 +96,14 @@ free_mat.columns.name = 'Date'
 free_mat.index.name = 'Time'
 free_mat = len(resident_choices) - free_mat
 st.dataframe(free_mat)
-    
 
-
-# # hdf = hdf.drop('n_working', axis=1)
-# st.markdown('# Hourly Matrix')
-
-# hdf = hdf.reset_index(drop=False)
-# hdf['diff'] = hdf['time'].diff()
-# hdf['contig'] = hdf['diff'].apply(lambda x: x.total_seconds() <= 60*60 if type(x) is not type(pd.NaT) else True)
-# hdf.drop('diff',axis=1,inplace=True)
-# # hdf = hdf.set_index('time')
-
-# i = 0
-# res = []
-# for c in hdf['contig']:
-#     if c: res.append(i)
-#     else:
-#         i += 1
-#         res.append(i)
-# hdf['grp'] = res
-
-# #TODO groupby
-# hdf
+# Build a table where rows are the chosen residents, columns the dates
+# and cells are the shift being worked
+fs = fs.sort_index()
+fs['date'] = [f'{i.month}/{i.day}' for i in fs.index]
+fs['shift_with_times'] = fs['shift'] + ' (' + (fs['start'].dt.hour).apply(str) + '-' + (fs['end'].dt.hour).apply(str) + ')'
+shift_mat = fs.groupby(['date','resident'])['shift_with_times'].apply(lambda x: '/'.join(x.tolist()))
+shift_mat = shift_mat.reset_index()
+shift_mat = shift_mat.pivot(columns='date', index='resident', values='shift_with_times')
+shift_mat = shift_mat.fillna('Off')
+shift_mat
