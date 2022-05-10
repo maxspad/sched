@@ -11,10 +11,7 @@ CALENDAR_URL = 'http://www.shiftadmin.com/schedule_ical_group.php?cd=UIwfTiYhARs
 
 s = urllib.request.urlopen(CALENDAR_URL).read()
 
-# sched = parse_sched.ical_to_df(s)
-
 # Read in schedule
-# sched = parse_sched.ical_to_df('schedule.ics')
 sched = parse_sched.ical_to_df(s,
     start=datetime.datetime(2021, 7, 1, 0, 0, 0),
     end=datetime.datetime(2022, 6, 30, 23, 59, 59))
@@ -86,4 +83,21 @@ hdf = hdf.reset_index(drop=False).sort_values(['n_working','time'])
 hdf = hdf.set_index('time')
 # hdf = hdf.drop('n_working', axis=1)
 st.markdown('# Hourly Matrix')
+
+hdf = hdf.reset_index(drop=False)
+hdf['diff'] = hdf['time'].diff()
+hdf['contig'] = hdf['diff'].apply(lambda x: x.total_seconds() <= 60*60 if type(x) is not type(pd.NaT) else True)
+hdf.drop('diff',axis=1,inplace=True)
+# hdf = hdf.set_index('time')
+
+i = 0
+res = []
+for c in hdf['contig']:
+    if c: res.append(i)
+    else:
+        i += 1
+        res.append(i)
+hdf['grp'] = res
+
+#TODO groupby
 hdf
