@@ -7,13 +7,12 @@ import pytz
 
 import urllib.request
 
-# CALENDAR_URL = 'http://www.shiftadmin.com/schedule_ical_group.php?cd=UIwfTiYhARsmldQIKdk1addmZLRORGLhbHKREh1COb8%3D&gfs=g9,f1,f2,f3&local=1&vc=1'
+CALENDAR_URL = 'http://www.shiftadmin.com/schedule_ical_group.php?cd=UIwfTiYhARsmldQIKdk1addmZLRORGLhbHKREh1COb8%3D&gfs=g9,f1,f2,f3&local=1&vc=1'
+s = urllib.request.urlopen(CALENDAR_URL).read()
 
-# s = urllib.request.urlopen(CALENDAR_URL).read()
-
-# patch over with no internet connection
-with open('schedule.ics') as f:
-    s = bytes(f.read(), encoding='utf-8')
+# # patch over with no internet connection
+# with open('schedule.ics') as f:
+#     s = bytes(f.read(), encoding='utf-8')
 
 
 # Read in schedule
