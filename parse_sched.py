@@ -2,9 +2,21 @@ from icalevents.icalevents import events
 import datetime
 from dateutil.parser import parse
 import pandas as pd
-import re 
+import pytz
+import urllib
 
-def ical_to_df(ical_str : str, start : datetime.date = None, end : datetime.date = None):
+def download_ical(url : str, from_file=False) -> str:
+    if not from_file:
+        s = urllib.request.urlopen(url).read()
+    else:
+        with open(url) as f:
+            s = bytes(f.read(), encoding='utf-8')
+    return s
+    
+
+
+def ical_to_df(ical_str : str, start : datetime.date = None, end : datetime.date = None,
+    tz=pytz.utc):
     start = datetime.date.today() if start is None else start # default to today
     end = parse("Jun 30 2022") if end is None else end # default to end of the academic year 
 
@@ -24,7 +36,11 @@ def ical_to_df(ical_str : str, start : datetime.date = None, end : datetime.date
     df['resident'] = names
     df = pd.concat([df, matches], axis=1)
     df = df[['summary','resident','shift','start','end','type','facility']]
+
+    # convert to the specified timezone and reindex
     df = df.sort_values(['start','shift'])
+    df = df.set_index('start', drop=False)
+    df.index = df.index.tz_convert(tz)
 
     return df
 

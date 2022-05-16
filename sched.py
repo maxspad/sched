@@ -3,23 +3,36 @@ import parse_sched
 import pandas as pd
 import numpy as np
 import datetime
+import zoneinfo
 import pytz
+# DEFINE GLOBAL PARAMETERS
+TZ = pytz.timezone('America/Detroit')
+CALENDAR_URL = 'http://www.shiftadmin.com/schedule_ical_group.php?cd=UIwfTiYhARsmldQIKdk1addmZLRORGLhbHKREh1COb8%3D&gfs=g9,f1,f2,f3&local=0&vc=1'
+SCHED_ICAL_START_DATE = TZ.localize(datetime.datetime(2021, 7, 1, 0, 0, 0)).astimezone(pytz.utc)
+SCHED_ICAL_END_DATE = TZ.localize(datetime.datetime(2022, 6, 30, 23, 59, 59)).astimezone(pytz.utc)
+RESIDENTS_CSV = 'residents.csv'
+MASTER_BLOCK_SCHEDULE_CSV = 'master_block_schedule.csv'
+OFF_SERVICE_HOURS_CSV = 'off_service_hours.csv'
 
-import urllib.request
+@st.experimental_memo
+def load_and_parse():
+    # Download ShiftAdmin schedule
+    s = parse_sched.download_ical(CALENDAR_URL)
+    # Convert to dataframe
+    sched = parse_sched.ical_to_df(s,
+        start=SCHED_ICAL_START_DATE,
+        end=SCHED_ICAL_END_DATE,
+        tz=TZ)
+    # Read in resident list
+    resdf = pd.read_csv(RESIDENTS_CSV)
+    # Read in block schedule
+    mbs = pd.read_csv(MASTER_BLOCK_SCHEDULE_CSV, header=[0,1,2,3], index_col=0)
+    # Read in off service hour listing
+    osh = pd.read_csv(OFF_SERVICE_HOURS_CSV)
+    return sched, resdf, mbs, osh
 
-CALENDAR_URL = 'http://www.shiftadmin.com/schedule_ical_group.php?cd=UIwfTiYhARsmldQIKdk1addmZLRORGLhbHKREh1COb8%3D&gfs=g9,f1,f2,f3&local=1&vc=1'
-s = urllib.request.urlopen(CALENDAR_URL).read()
 
-# # patch over with no internet connection
-# with open('schedule.ics') as f:
-#     s = bytes(f.read(), encoding='utf-8')
-
-
-# Read in schedule
-sched = parse_sched.ical_to_df(s,
-    start=datetime.datetime(2021, 7, 1, 0, 0, 0),
-    end=datetime.datetime(2022, 6, 30, 23, 59, 59))
-resdf = pd.read_csv('residents.csv')
+sched, resdf, mbs, osh = load_and_parse()
 
 # Define UI
 with st.expander('Options:'):
@@ -37,23 +50,29 @@ with st.expander('Options:'):
 # Clean UI inputs
 # Add the timezone to the inputs
 start_dt = pd.Timestamp(st_date)
-start_dt = start_dt.tz_localize('utc')
+start_dt = start_dt.tz_localize(TZ)
 end_dt = pd.Timestamp(en_date)
-end_dt = end_dt.tz_localize('utc')
+end_dt = end_dt.tz_localize(TZ)
 
+st.write(f'Shifts between {start_dt} {start_dt.tzname()} and {end_dt} {end_dt.tzname()}')
 # filter the schedule to the requested dates
-fs = sched.copy().set_index('start', drop=False).sort_index()
+fs = sched.copy()
 fs = fs[start_dt:end_dt]
 
 # filter the schedule to the requested residents
+st.write(f'For residents {" ".join(resident_choices)}')
 fs = fs[fs['resident'].isin(resident_choices)]
 
+st.write('Filtered schedule:')
+st.dataframe(fs)
 # add some extra columns to make things easier 
 fs['start_day'] = fs['start'].dt.dayofyear
 fs['end_day'] = fs['end'].dt.dayofyear
 fs['start_hour'] = fs['start'].dt.hour
 fs['end_hour'] = fs['end'].dt.hour
 
+mbs.T
+osh
 # Build a matrix where rows are residents and columns are hours
 # 0-hour/column is the first hour (midnight) of start_dt
 # the value of the matrix at res,hr is 1 if the resident is working
