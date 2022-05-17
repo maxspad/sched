@@ -34,17 +34,44 @@ def load_and_parse():
 sched, resdf, mbs, osh = load_and_parse()
 
 # Define UI
-with st.expander('Options:'):
-    st_date = st.date_input('Between', key='st_date', 
+cols = st.columns(2)
+with cols[0]:
+    st.markdown('# AutScheduler')
+with cols[1]:
+    st.image('raccoon.png', width=75 )
+blurb = '''**Figure out when your coresidents will be off.** 
+
+Choose the residents, a date range, and a time window when you want to plan your event.
+This tool will automatically pull
+the ShiftAdmin schedule and block schedule and calculate the best dates/times. 
+
+*It\'s like a Doodle poll that fills itself out.*'''
+st.markdown(blurb)
+with st.expander('Options:', expanded=True):
+    resident_choices = st.multiselect("Choose residents", resdf['resident'].tolist(),
+        default=['M Spadafore','M Newton', 'M Basinger'])
+    # st.write('Or whole classes:')
+    # pgy_cols = st.columns(4)
+    # pgy_selected = [pgy_col.checkbox(f'PGY{i+1}s') for i, pgy_col in enumerate(pgy_cols)]
+
+    date_cols = st.columns(2)
+    st_date = date_cols[0].date_input('Search between', key='st_date', 
         min_value=sched['start'].min(), max_value=sched['end'].max(),
         value=datetime.date.today())
-    en_date = st.date_input('and ', key='en_date',
-        min_value=sched['end'].min(), max_value=sched['end'].max(),
+    en_date_min_value = st_date
+    en_date_min_value = sched['end'].min()
+    en_date = date_cols[1].date_input('and ', key='en_date',
+        min_value=st_date, max_value=sched['end'].max(),
         value=sched['end'].max())
-    st_time = st.time_input('between the hours of', value=datetime.time(15,00))
-    en_time = st.time_input('and', key='en_time', value=datetime.time(23,00))
-    resident_choices = st.multiselect("Residents: ", resdf['resident'].tolist(),
-        default=['M Spadafore','M Newton', 'M Basinger'])
+
+    time_cols = st.columns(2)
+    st_time = time_cols[0].time_input('for each day, show results only between the hours of', value=datetime.time(17,00))
+    en_time = time_cols[1].time_input('and', key='en_time', value=datetime.time(22,00))
+
+# Make sure residents were selected
+if not len(resident_choices):
+    st.info('Please select at least one resident above.')
+    st.stop()
 
 # Clean UI inputs
 # Make the inputs timezone-aware
@@ -53,26 +80,19 @@ start_dt = start_dt.tz_localize(TZ)
 end_dt = pd.Timestamp(en_date)
 end_dt = end_dt.tz_localize(TZ)
 
-st.write(f'Shifts between {start_dt} {start_dt.tzname()} and {end_dt} {end_dt.tzname()}') # TODO for debugging
+# st.write(f'Shifts between {start_dt} {start_dt.tzname()} and {end_dt} {end_dt.tzname()}') # TODO for debugging
 # filter the schedule to the requested dates
 fs = sched.copy()
 fs = fs[start_dt:end_dt]
 
 # filter the schedule to the requested residents
-st.write(f'For residents {" ".join(resident_choices)}') # TODO for debugging
 fs = fs[fs['resident'].isin(resident_choices)]
 
-st.write('Filtered schedule:') # TODO for debugging
-st.dataframe(fs)
 # add some extra columns to make things easier 
 fs['start_day'] = fs['start'].dt.dayofyear
 fs['end_day'] = fs['end'].dt.dayofyear
 fs['start_hour'] = fs['start'].dt.hour
 fs['end_hour'] = fs['end'].dt.hour
-
-# add in off service rotations
-# mbs = mbs.drop(['block','week','week_end'], axis=1)
-# mbs
 
 # Build a matrix where rows are residents and columns are hours
 # 0-hour/column is the first hour (midnight) of start_dt
@@ -96,7 +116,6 @@ hdf = hdf.T # transpose for convenience
 
 # filter to include only the selected times
 hdf = hdf[st_time:en_time]
-
 
 # for each hour-long time period, sum the number of selected residents working 
 # during the time period
