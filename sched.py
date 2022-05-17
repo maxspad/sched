@@ -3,65 +3,35 @@ import sched_helpers
 import pandas as pd
 import numpy as np
 import datetime
-import zoneinfo
-import pytz
-# DEFINE GLOBAL PARAMETERS
-TZ = pytz.timezone('America/Detroit')
-CALENDAR_URL = 'http://www.shiftadmin.com/schedule_ical_group.php?cd=UIwfTiYhARsmldQIKdk1addmZLRORGLhbHKREh1COb8%3D&gfs=g9,f1,f2,f3&local=0&vc=1'
-SCHED_ICAL_START_DATE = TZ.localize(datetime.datetime(2021, 7, 1, 0, 0, 0)).astimezone(pytz.utc)
-SCHED_ICAL_END_DATE = TZ.localize(datetime.datetime(2022, 6, 30, 23, 59, 59)).astimezone(pytz.utc)
-RESIDENTS_CSV = 'residents.csv'
-MASTER_BLOCK_SCHEDULE_CSV = 'master_block_schedule.csv'
-OFF_SERVICE_HOURS_CSV = 'off_service_hours.csv'
-
-def load_mbs(mbs_csv_loc : str) -> pd.DataFrame:
-    mbs = pd.read_csv(mbs_csv_loc, header=[0,1,2,3], index_col=0)
-    mbs = mbs.T # rows are dates, columns residents
-    mbs = mbs.reset_index()
-    mbs.index = pd.PeriodIndex(mbs['week_start'], freq='7D') # TODO this creates an off by one bug at end of academic year
-    mbs = mbs.drop(['block','week','week_start','week_end'], axis=1)
-
-    # mbs['week_start'] = mbs['week_start'].apply(pd.Timestamp)
-    # mbs['week_end'] = mbs['week_end'].apply(pd.Timestamp)
-    # mbs = mbs.set_index('week_start')
-
-    # mbs = mbs.set_index(['week_start', 'week_end', 'week', 'block'], drop=True)
-    return mbs
+from sched_consts import *
 
 # @st.experimental_memo
 def load_and_parse():
     # Download ShiftAdmin schedule
     s = sched_helpers.download_ical(CALENDAR_URL)
+
     # Convert to dataframe
     sched = sched_helpers.ical_to_df(s,
         start=SCHED_ICAL_START_DATE,
         end=SCHED_ICAL_END_DATE,
         tz=TZ)
+
     # Read in resident list
-    resdf = pd.read_csv(RESIDENTS_CSV)
-    # Read in block schedule
-    # mbs = pd.read_csv(MASTER_BLOCK_SCHEDULE_CSV, header=[0,1,2,3], index_col=0)
-    mbs = load_mbs(MASTER_BLOCK_SCHEDULE_CSV)
+    resdf = sched_helpers.resident_df(RESIDENTS_CSV)
+
     # Read in off service hour listing
-    osh = pd.read_csv(OFF_SERVICE_HOURS_CSV)
-    osh = osh.set_index('rotation')
-    return sched, resdf, mbs, osh
+    osh = sched_helpers.off_service_hours_df(OFF_SERVICE_HOURS_CSV)
+    
+    # Generate the off-service schedule
+    os_sched = sched_helpers.master_block_sched_df(MASTER_BLOCK_SCHEDULE_CSV, osh, sched, TZ)
+
+    # Combine with the total schedule
+    sched = pd.concat([sched, os_sched]).sort_index()
+
+    return sched, resdf, os_sched, osh
 
 
 sched, resdf, mbs, osh = load_and_parse()
-print(mbs.index)
-mbs_starts = mbs.replace(osh['start'].to_dict())
-mbs_starts['col_type'] = 'start'
-mbs_ends = mbs.replace(osh['end'].to_dict())
-mbs_ends['col_type'] = 'end'
-mbs['col_type'] = 'shift'
-mbs = pd.concat([mbs_starts, mbs_ends, mbs])
-mbs = mbs.pivot(columns='col_type')
-mbs = mbs.resample('D').ffill()
-mbs = mbs.sort_index()
-# st.write(osh['start'].to_dict())
-print(mbs)
-# st.dataframe(mbs.apply(lambda x: x.apply(lambda yosh.loc[x,'start'], axis=0))
 
 # Define UI
 with st.expander('Options:'):

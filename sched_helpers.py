@@ -18,6 +18,50 @@ def off_service_hours_df(osh_csv : str) -> pd.DataFrame:
     osh = osh.set_index('rotation')
     return osh
 
+def master_block_sched_df(mbs_csv : str, osh : pd.DataFrame, sched : pd.DataFrame, tz : pytz.timezone) -> pd.DataFrame:
+    # read the mbs CSV
+    mbs = pd.read_csv(mbs_csv, header=[0,1,2,3], index_col=0)
+    # flip and use only the columns we need
+    mbs = mbs.T.reset_index().drop(['block','week','week_end'], axis=1)
+    # each row represents a week-long period
+    mbs.index = pd.period_range(mbs.loc[0, 'week_start'], freq='7D', periods=len(mbs), name='week')
+    mbs = mbs.drop('week_start', axis=1)
+
+    # upsample to get daily roations
+    mbs = mbs.resample('D').ffill()
+    mbs.index = mbs.index.rename('day')
+
+    # now each row is "day|resident|rotation" - long format instead of wide
+    mbs = (mbs.reset_index()
+            .melt(id_vars='day', var_name='resident', value_name='rotation')
+            .set_index('day'))
+
+    # covert the mbs df in to a sched-like df
+    # create the start and end times for these offservice "shifts'"
+    mbs['start'] = pd.to_timedelta(mbs['rotation'].replace(osh['start'].to_dict()))
+    mbs['end'] = pd.to_timedelta(mbs['rotation'].replace(osh['end'].to_dict()))
+    mbs['start'] = mbs.index.to_timestamp() + mbs['start']
+    mbs['end'] = mbs.index.to_timestamp() + mbs['end']
+    mbs['start'] = mbs['start'].dt.tz_localize(tz)
+    mbs['end'] = mbs['end'].dt.tz_localize(tz)
+
+    # get rid of actual on-service times
+    mbs = mbs[mbs['rotation'] != 'ED']
+
+    # build the columns to make this df look like sched df 
+    mbs['summary'] = 'OS ' + mbs['rotation'] + ' ' + mbs['resident']
+    mbs['shift'] = mbs['rotation']
+    mbs['type'] = 'Off Service'
+    mbs['facility'] = 'NA'
+
+    # filter to only the right columns
+    mbs = mbs[sched.columns]
+
+    # set index similar to sched
+    mbs = mbs.reset_index(drop=True).set_index('start', drop=False).sort_index()
+
+    return mbs
+
 def download_ical(url : str, from_file=False) -> str:
     if not from_file:
         s = urllib.request.urlopen(url).read()
@@ -53,7 +97,7 @@ def ical_to_df(ical_str : str, start : datetime.date = None, end : datetime.date
     df['start'] = df['start'].dt.tz_convert(tz)
     df['end'] = df['end'].dt.tz_convert(tz)
     df = df.set_index('start', drop=False)
-    
+
     return df
 
 def resident_list(sched_df : pd.DataFrame):
