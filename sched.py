@@ -1,5 +1,5 @@
 import streamlit as st
-import parse_sched
+import sched_helpers
 import pandas as pd
 import numpy as np
 import datetime
@@ -31,9 +31,9 @@ def load_mbs(mbs_csv_loc : str) -> pd.DataFrame:
 # @st.experimental_memo
 def load_and_parse():
     # Download ShiftAdmin schedule
-    s = parse_sched.download_ical(CALENDAR_URL)
+    s = sched_helpers.download_ical(CALENDAR_URL)
     # Convert to dataframe
-    sched = parse_sched.ical_to_df(s,
+    sched = sched_helpers.ical_to_df(s,
         start=SCHED_ICAL_START_DATE,
         end=SCHED_ICAL_END_DATE,
         tz=TZ)
