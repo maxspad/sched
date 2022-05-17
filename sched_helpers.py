@@ -5,6 +5,19 @@ import pandas as pd
 import pytz
 import urllib
 
+def resident_df(resident_csv : str) -> pd.DataFrame:
+    '''Load and preprocess resident list dataframe'''
+    # Read in resident list
+    resdf = pd.read_csv(resident_csv)
+    return resdf
+
+def off_service_hours_df(osh_csv : str) -> pd.DataFrame:
+    '''Load and precprocess off-service rotation hours listing'''
+    # Read in off service hour listing
+    osh = pd.read_csv(osh_csv)
+    osh = osh.set_index('rotation')
+    return osh
+
 def download_ical(url : str, from_file=False) -> str:
     if not from_file:
         s = urllib.request.urlopen(url).read()
@@ -12,8 +25,6 @@ def download_ical(url : str, from_file=False) -> str:
         with open(url) as f:
             s = bytes(f.read(), encoding='utf-8')
     return s
-    
-
 
 def ical_to_df(ical_str : str, start : datetime.date = None, end : datetime.date = None,
     tz=pytz.utc):
@@ -39,9 +50,10 @@ def ical_to_df(ical_str : str, start : datetime.date = None, end : datetime.date
 
     # convert to the specified timezone and reindex
     df = df.sort_values(['start','shift'])
+    df['start'] = df['start'].dt.tz_convert(tz)
+    df['end'] = df['end'].dt.tz_convert(tz)
     df = df.set_index('start', drop=False)
-    df.index = df.index.tz_convert(tz)
-
+    
     return df
 
 def resident_list(sched_df : pd.DataFrame):
