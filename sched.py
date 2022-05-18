@@ -4,6 +4,7 @@ import pandas as pd
 import numpy as np
 import datetime
 from sched_consts import *
+from matplotlib import cm
 
 # @st.experimental_memo
 def load_and_parse():
@@ -36,7 +37,7 @@ sched, resdf, mbs, osh = load_and_parse()
 # Define UI
 cols = st.columns(2)
 with cols[0]:
-    st.markdown('# AutScheduler')
+    st.markdown('# GREAT TITLE')
 with cols[1]:
     st.image('raccoon.png', width=75 )
 blurb = '''**Figure out when your coresidents will be off.** 
@@ -48,8 +49,7 @@ the ShiftAdmin schedule and block schedule and calculate the best dates/times.
 *It\'s like a Doodle poll that fills itself out.*'''
 st.markdown(blurb)
 with st.expander('Options:', expanded=True):
-    resident_choices = st.multiselect("Choose residents", resdf['resident'].tolist(),
-        default=['M Spadafore','M Newton', 'M Basinger'])
+    resident_choices = st.multiselect("Choose residents", resdf['resident'].tolist())
     # st.write('Or whole classes:')
     # pgy_cols = st.columns(4)
     # pgy_selected = [pgy_col.checkbox(f'PGY{i+1}s') for i, pgy_col in enumerate(pgy_cols)]
@@ -133,15 +133,57 @@ free_mat.columns = free_mat.columns.droplevel(0)
 free_mat.columns.name = 'Date'
 free_mat.index.name = 'Time'
 free_mat = len(resident_choices) - free_mat
-st.dataframe(free_mat)
+
+# CSS to inject contained in a string
+hide_dataframe_row_index = """
+            <style>
+            .row_heading.level0 {font-size:12pt; font-weight:bold; color:black}
+            .col_heading.level0 {font-size:12pt; font-weight:bold; color:black}
+            .blank {display:none}
+            </style>
+            """
+
+# Inject CSS with Markdown
+st.markdown(hide_dataframe_row_index, unsafe_allow_html=True)
+
+# style the matrix for display
+free_mat_styled = (free_mat.style.background_gradient(axis=None, high=0.25, low=0.45, cmap=cm.get_cmap('RdYlGn'))
+                                 .set_properties(**{'text-align':'center'})
+)
+# free_mat_styled = free_mat_styled.set_table_styles([{'selector':'table','props':[('overflow-x','scroll')]}])
+# free_mat_styled.set_tooltips(tt)
+# html = free_mat_styled.to_html()
+# st.write(html, unsafe_allow_html=True)
+# st(html)
+st.dataframe(free_mat_styled)
+
+# gb = fs.groupby(fs.index.floor('d'))
+# def get_services_str(gbdf : pd.DataFrame):
+#     s = 'Vacation:\n'
+#     filter = (gbdf['shift'] == 'VCTN')
+#     s += '\n'.join(gbdf[filter]['resident'])
+
+#     s += 'Off-Service:\n'
+#     filter = ((gbdf['type'] == 'Off Service') & (gbdf['shift'] != 'VCTN'))
+#     s += '\n'.join(gbdf[filter]['resident'] + ' (' + gbdf[filter]['shift'] + ')')
+
+#     s += 'ED:\n'
+#     filter = ((gbdf['type'] != 'Off Service') & (gbdf['shift'] != 'VCTN'))
+#     s += '\n'.join(gbdf[filter]['resident'] + ' (' + gbdf[filter]['shift'] + ')')
+#     return s
+# blah = pd.DataFrame(gb.apply(get_services_str))
+# blah = blah.style.set_properties(**{'text-align':'left','white-space':'pre-wrap'})
+# st.dataframe(blah)
 
 # Build a table where rows are the chosen residents, columns the dates
 # and cells are the shift being worked
 fs = fs.sort_index()
 fs['date'] = [f'{i.month}/{i.day}' for i in fs.index]
-fs['shift_with_times'] = fs['shift'] + ' (' + (fs['start'].dt.hour).apply(str) + '-' + (fs['end'].dt.hour).apply(str) + ')'
+fs['shift_with_times'] = fs['shift'] # + ' (' + (fs['start'].dt.hour).apply(str) + '-' + (fs['end'].dt.hour).apply(str) + ')'
 shift_mat = fs.groupby(['date','resident'])['shift_with_times'].apply(lambda x: '/'.join(x.tolist()))
 shift_mat = shift_mat.reset_index()
 shift_mat = shift_mat.pivot(columns='date', index='resident', values='shift_with_times')
 shift_mat = shift_mat.fillna('Off')
-shift_mat
+
+shift_mat_styled = (shift_mat.style.set_properties(**{'font-size':'10pt'}))
+st.dataframe(shift_mat_styled)
