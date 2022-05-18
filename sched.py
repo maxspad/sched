@@ -6,7 +6,13 @@ import datetime
 from sched_consts import *
 from matplotlib import cm
 
-st.set_page_config('ScheduleSteve', page_icon='favico.png')
+about_markdown = '''# 🦝 ScheduleSteve
+*There is no trash cannot, only trash can.*
+
+© 2022 Maxwell Spadafore
+'''
+st.set_page_config('ScheduleSteve', page_icon='favico.png', 
+    menu_items={'About': about_markdown})
 
 @st.experimental_memo
 def load_and_parse():
