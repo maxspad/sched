@@ -6,7 +6,7 @@ import datetime
 from sched_consts import *
 from matplotlib import cm
 
-# @st.experimental_memo
+@st.experimental_memo
 def load_and_parse():
     # Download ShiftAdmin schedule
     s = sched_helpers.download_ical(CALENDAR_URL)
@@ -134,6 +134,17 @@ free_mat.columns.name = 'Date'
 free_mat.index.name = 'Time'
 free_mat = len(resident_choices) - free_mat
 
+# make the index in AM/PM times to be easier to read
+def fix_am_pm(x):
+    if x < 12:
+        return f'{x} AM'
+    elif x == 12:
+        return f'{x} PM'
+    else:
+        return f'{x-12} PM'
+
+free_mat.index = free_mat.index.map(fix_am_pm)
+
 # CSS to inject contained in a string
 hide_dataframe_row_index = """
             <style>
@@ -150,30 +161,12 @@ st.markdown(hide_dataframe_row_index, unsafe_allow_html=True)
 free_mat_styled = (free_mat.style.background_gradient(axis=None, high=0.25, low=0.45, cmap=cm.get_cmap('RdYlGn'))
                                  .set_properties(**{'text-align':'center'})
 )
-# free_mat_styled = free_mat_styled.set_table_styles([{'selector':'table','props':[('overflow-x','scroll')]}])
-# free_mat_styled.set_tooltips(tt)
-# html = free_mat_styled.to_html()
-# st.write(html, unsafe_allow_html=True)
-# st(html)
+
+# Output our dataframe and some text describing it
+free_mat_df_text = '''### Best Days and Times
+For each day and time, this table shows the number of residents who are free'''
+st.markdown(free_mat_df_text)
 st.dataframe(free_mat_styled)
-
-# gb = fs.groupby(fs.index.floor('d'))
-# def get_services_str(gbdf : pd.DataFrame):
-#     s = 'Vacation:\n'
-#     filter = (gbdf['shift'] == 'VCTN')
-#     s += '\n'.join(gbdf[filter]['resident'])
-
-#     s += 'Off-Service:\n'
-#     filter = ((gbdf['type'] == 'Off Service') & (gbdf['shift'] != 'VCTN'))
-#     s += '\n'.join(gbdf[filter]['resident'] + ' (' + gbdf[filter]['shift'] + ')')
-
-#     s += 'ED:\n'
-#     filter = ((gbdf['type'] != 'Off Service') & (gbdf['shift'] != 'VCTN'))
-#     s += '\n'.join(gbdf[filter]['resident'] + ' (' + gbdf[filter]['shift'] + ')')
-#     return s
-# blah = pd.DataFrame(gb.apply(get_services_str))
-# blah = blah.style.set_properties(**{'text-align':'left','white-space':'pre-wrap'})
-# st.dataframe(blah)
 
 # Build a table where rows are the chosen residents, columns the dates
 # and cells are the shift being worked
@@ -186,4 +179,8 @@ shift_mat = shift_mat.pivot(columns='date', index='resident', values='shift_with
 shift_mat = shift_mat.fillna('Off')
 
 shift_mat_styled = (shift_mat.style.set_properties(**{'font-size':'10pt'}))
+# Output the df and some text describing it
+shift_mat_df_text = '''### Resident Schedules
+This table shows the scheduled shifts/rotations for the residents selected above'''
+st.markdown(shift_mat_df_text)
 st.dataframe(shift_mat_styled)
