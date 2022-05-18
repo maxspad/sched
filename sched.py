@@ -6,6 +6,8 @@ import datetime
 from sched_consts import *
 from matplotlib import cm
 
+st.set_page_config('ScheduleSteve', page_icon='favico.png')
+
 @st.experimental_memo
 def load_and_parse():
     # Download ShiftAdmin schedule
@@ -37,7 +39,7 @@ sched, resdf, mbs, osh = load_and_parse()
 # Define UI
 cols = st.columns(2)
 with cols[0]:
-    st.markdown('# GREAT TITLE')
+    st.markdown('# *ScheduleSteve*')
 with cols[1]:
     st.image('raccoon.png', width=75 )
 blurb = '''**Figure out when your coresidents will be off.** 
@@ -49,10 +51,16 @@ the ShiftAdmin schedule and block schedule and calculate the best dates/times.
 *It\'s like a Doodle poll that fills itself out.*'''
 st.markdown(blurb)
 with st.expander('Options:', expanded=True):
-    resident_choices = st.multiselect("Choose residents", resdf['resident'].tolist())
-    # st.write('Or whole classes:')
-    # pgy_cols = st.columns(4)
-    # pgy_selected = [pgy_col.checkbox(f'PGY{i+1}s') for i, pgy_col in enumerate(pgy_cols)]
+    res_choices_holder = st.empty()
+    default_resident_choices = []
+
+    pgy_cols = st.columns(4)
+    pgy_selected = [pgy_col.checkbox(f'PGY{i+1}s') for i, pgy_col in enumerate(pgy_cols)]
+    for i, pgy in enumerate(pgy_selected):
+        if pgy:
+            default_resident_choices += resdf[resdf['year'] == (i+1)]['resident'].tolist()
+    
+    resident_choices = res_choices_holder.multiselect("Choose residents", resdf['resident'].tolist(), default=default_resident_choices)
 
     date_cols = st.columns(2)
     st_date = date_cols[0].date_input('Search between', key='st_date', 
@@ -122,7 +130,7 @@ hdf = hdf[st_time:en_time]
 hdf['n_working'] = hdf.sum(1)
 hdf.index.name = 'time'
 hdf = hdf[['n_working']] # filter to only be the aggregated column
-hdf['dayofyear'] = [f'{i.month}/{i.day}' for i in hdf.index]
+hdf['dayofyear'] = [pd.Timestamp(f'{i.month}/{i.day}/{i.year}') for i in hdf.index]
 hdf['hour'] = hdf.index.hour
 
 # reformat - now rows are hours in the selcted interval and columns
@@ -130,6 +138,7 @@ hdf['hour'] = hdf.index.hour
 # similar to a doodle poll
 free_mat = hdf.pivot(columns='dayofyear', index='hour')
 free_mat.columns = free_mat.columns.droplevel(0)
+free_mat.columns = [f'{c.month}/{c.day}' for c in free_mat.columns]
 free_mat.columns.name = 'Date'
 free_mat.index.name = 'Time'
 free_mat = len(resident_choices) - free_mat
