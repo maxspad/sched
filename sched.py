@@ -5,15 +5,22 @@ import numpy as np
 import datetime
 from sched_consts import *
 from matplotlib import cm
+from streamlit_option_menu import option_menu
 
 about_markdown = '''# 🦝 ScheduleSteve
 *There is no trash cannot, only trash can.*
 
 © 2022 Maxwell Spadafore
 '''
-st.set_page_config('ScheduleSteve', page_icon='favico.png', 
-    menu_items={'About': about_markdown})
 
+
+# 2. horizontal menu
+selected2 = option_menu(None, ["Home", "Upload", "Tasks", 'Settings'], 
+    icons=['house', 'cloud-upload', "list-task", 'gear'], 
+    menu_icon="cast", default_index=0, orientation="horizontal")
+selected2
+
+# st.write(f'You clicked {clicked}')
 @st.experimental_memo
 def load_and_parse():
     # Download ShiftAdmin schedule
