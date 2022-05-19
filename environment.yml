@@ -8,3 +8,4 @@ dependencies:
   - matplotlib
   - pip:
     - icalevents
+    - streamlit-option-menu
