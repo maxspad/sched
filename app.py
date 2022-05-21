@@ -19,11 +19,11 @@ st.set_page_config(
     }
 )
 # Display the header
-panda_string = sched_helpers.image_data_str('raccoon.png')
+raccoon_string = sched_helpers.image_data_str('raccoon.png')
 html = f'''
 <hr style='margin: 0.25em'/>
 <h1 style='text-align: center'>
-    <img height="75px" src="data:image/png;base64,{panda_string}"/>
+    <img height="75px" src="data:image/png;base64,{raccoon_string}"/>
     <span style='margin-left: 0.5em'>{sched_consts.APP_TITLE}</span>
 </h1>
 <hr style='margin: 0.25em'  />

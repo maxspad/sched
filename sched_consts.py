@@ -3,8 +3,8 @@ import pytz
 
 # DEFINE GLOBAL PARAMETERS
 APP_TITLE = "ResiDoodle"
-ABOUT_MARKDOWN = f'''# {APP_TITLE}
-🦝 *There is no trash cannot, only trash can.*
+ABOUT_MARKDOWN = f'''# 🦝 {APP_TITLE}
+*There is no trash cannot, only trash can.*
 
 © 2022 Maxwell Spadafore
 '''
