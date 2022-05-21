@@ -154,11 +154,11 @@ def display():
     # Load all the dataframes
     sched, resdf, mbs, osh = load_and_parse()
 
-    cols = st.columns(2)
-    with cols[0]:
-        st.markdown(f'# *{APP_TITLE}*')
-    with cols[1]:
-        st.image('raccoon.png', width=75 )
+    # cols = st.columns(2)
+    # with cols[0]:
+    #     st.markdown(f'# *{APP_TITLE}*')
+    # with cols[1]:
+    #     st.image('raccoon.png', width=75 )
     blurb = '''**Figure out when your coresidents will be off.** 
 
 Choose the residents, a date range, and a time window when you want to plan your event.

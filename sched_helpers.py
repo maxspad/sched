@@ -4,6 +4,7 @@ from dateutil.parser import parse
 import pandas as pd
 import pytz
 import urllib
+import base64
 
 def resident_df(resident_csv : str) -> pd.DataFrame:
     '''Load and preprocess resident list dataframe'''
@@ -102,6 +103,11 @@ def ical_to_df(ical_str : str, start : datetime.date = None, end : datetime.date
 
 def resident_list(sched_df : pd.DataFrame):
     return list(sched_df['resident'].unique())
+
+def image_data_str(image_fn : str) -> str:
+    with open(image_fn, 'rb') as f:
+        image_str = base64.b64encode(f.read()).decode()
+    return image_str
 
 if __name__ == "__main__":
     sched_df = ical_to_df('schedule.ics')

@@ -2,7 +2,7 @@ import datetime
 import pytz
 
 # DEFINE GLOBAL PARAMETERS
-APP_TITLE = "WhoIsOff"
+APP_TITLE = "ResiDoodle"
 ABOUT_MARKDOWN = f'''# {APP_TITLE}
 🦝 *There is no trash cannot, only trash can.*
 

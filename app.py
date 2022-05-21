@@ -3,6 +3,7 @@
 import streamlit as st
 from streamlit_option_menu import option_menu
 import sched_consts
+import sched_helpers
 import sched
 import feedback
 import about
@@ -17,11 +18,23 @@ st.set_page_config(
         "About":sched_consts.ABOUT_MARKDOWN
     }
 )
-
+# Display the header
+panda_string = sched_helpers.image_data_str('raccoon.png')
+html = f'''
+<hr style='margin: 0.25em'/>
+<h1 style='text-align: center'>
+    <img height="75px" src="data:image/png;base64,{panda_string}"/>
+    <span style='margin-left: 0.5em'>{sched_consts.APP_TITLE}</span>
+</h1>
+<hr style='margin: 0.25em'  />
+'''
+st.write(html, unsafe_allow_html=True)
 # Set up the Navigation Bar
 nav_bar_selected = option_menu(None, sched_consts.APP_PAGES,
     icons=['house','info-circle','card-checklist'],
     menu_icon='cast', default_index=0, orientation='horizontal')
+
+
 
 # Display the selected page
 if nav_bar_selected == "Home":
