@@ -1,4 +1,4 @@
 import streamlit as st
 
 def display():
-    st.write("this is the sched page")
+    st.write("This is the about page")

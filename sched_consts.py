@@ -2,6 +2,14 @@ import datetime
 import pytz
 
 # DEFINE GLOBAL PARAMETERS
+APP_TITLE = "WhoIsOff"
+ABOUT_MARKDOWN = f'''# {APP_TITLE}
+🦝 *There is no trash cannot, only trash can.*
+
+© 2022 Maxwell Spadafore
+'''
+APP_PAGES = ['Home', 'About', 'Feedback']
+
 TZ = pytz.timezone('America/Detroit')
 CALENDAR_URL = 'http://www.shiftadmin.com/schedule_ical_group.php?cd=UIwfTiYhARsmldQIKdk1addmZLRORGLhbHKREh1COb8%3D&gfs=g9,f1,f2,f3&local=0&vc=1'
 SCHED_ICAL_START_DATE = TZ.localize(datetime.datetime(2021, 7, 1, 0, 0, 0)).astimezone(pytz.utc)
