@@ -130,7 +130,7 @@ For each day and time, this table shows the number of residents who are free'''
 def build_shift_mat(fs: pd.DataFrame) -> pd.DataFrame:
     fs = fs.copy()
     fs = fs.sort_index()
-    fs['date'] = [f'{i.month}/{i.day}' for i in fs.index]
+    fs['date'] = [f'{i.month}/{i.day:02d}' for i in fs.index]
     fs['shift_with_times'] = fs['shift'] # + ' (' + (fs['start'].dt.hour).apply(str) + '-' + (fs['end'].dt.hour).apply(str) + ')'
     shift_mat = fs.groupby(['date','resident'])['shift_with_times'].apply(lambda x: '/'.join(x.tolist()))
     shift_mat = shift_mat.reset_index()
