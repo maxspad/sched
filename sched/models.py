@@ -87,5 +87,6 @@ import pandas as pd
 
 if __name__ == '__main__':
     shifts_csv = pd.read_csv('data/shifts.csv')
+    # shifts_csv['startTime'] = pd.to_timedelta(shifts_csv['startTime'])
     shifts = [ShiftType(**r.to_dict()) for _, r in shifts_csv.iterrows()]
     print(shifts)
