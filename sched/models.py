@@ -1,92 +1,57 @@
-from pydantic import BaseModel, Field, computed_field, StrictInt, EmailStr
-from typing import List, Optional, Union, Literal, Dict
-from datetime import datetime, date, time, timedelta
+from pydantic import BaseModel, StrictInt, Field, EmailStr
+from datetime import date, time, datetime, timedelta
 from enum import Enum
-
-class DayOfWeek(Enum):
-    Mon = 'Mon'
-    Tue = 'Tue'
-    Wed = 'Wed'
-    Thu = 'Thu'
-    Fri = 'Fri'
-    Sat = 'Sat'
-    Sun = 'Sun'
-
-ALL_DAYS_OF_WEEK = list(DayOfWeek)
-
-class Rule(BaseModel):
-    name : str
-    description : str = ''
-
-class ShiftRule(Rule):
-    pass
-
-class UserRule(Rule):
-    pass
+from typing import Union, List, Dict, Optional
 
 class ShiftType(BaseModel):
+    id : StrictInt
     name : str
-    # shortName : str
     startTime : timedelta
-    duration: timedelta
+    endTime : timedelta
     postBuffer : timedelta = timedelta(seconds=0)
-
     isClinical : bool = True
     isCounted : bool = True
     isNight : bool = False
 
-    shiftRules : Optional[List[ShiftRule]] = None
-
-class StaffingRule(ShiftRule):
-     minStaffing : StrictInt
-     maxStaffing : StrictInt
-
-class WeeklyStaffingRule(StaffingRule):
-    appliesToDays : List[DayOfWeek] = ALL_DAYS_OF_WEEK
-    minStaffing : Union[StrictInt, Dict[DayOfWeek, StrictInt]]
-    maxStaffing : Union[StrictInt, Dict[DayOfWeek, StrictInt]]
-
-class DayOfMonthStaffingRule(StaffingRule):
-    dayOfMonth : timedelta
-
-class CustomDateStaffingRule(StaffingRule):
-    '''Set specific staffing for a certain shift on a certain day'''
-    customDate: date
-
-class WorkloadRule(UserRule):
-    pass
+class ScheduleableShiftsType(Enum):
+    ALL = 'all'
+    NONE = 'none'
 
 class RotationType(BaseModel):
+    id : StrictInt
     name : str
-    abbrv : Optional[str] = None
-    preBufferHours : int = 0
-    postBufferHours : int = 0
-    schedulableShifts : Union[Optional[List[ShiftType]], Literal['all']] = 'all'
+    preBuffer : timedelta = timedelta(seconds=0)
+    postBuffer : timedelta = timedelta(seconds=0)
+    isDefault : bool = False
+    scheduleableShifts = Union[ScheduleableShiftsType, List[ShiftType]] = ScheduleableShiftsType.ALL
 
-class ScheduledRotation(BaseModel):
-    rotationType : RotationType
+class GenerationPeriod(BaseModel):
+    id : StrictInt
+    name : str
+    startDate : date
+    endDate : date 
+
+class User(BaseModel):
+    id : StrictInt
+    lastName : str = Field(min_length=1)
+    firstName : str = Field(min_length=1)
+    nickname : Optional[str] = None
+    email : Optional[EmailStr] = None
+    edIsDefault : bool = True
+
+class AcademicYear(BaseModel):
+    id : StrictInt
+    name : str
     startDate : date
     endDate : date
 
-class User(BaseModel):
-    firstName : str = Field(min_length=1)
-    lastName : str = Field(min_length=1)
-    email : EmailStr
-
-    @computed_field
-    @property
-    def schedName(self) -> str:
-        return self.firstName[0] + ' ' + self.lastName
-
-class Shift(BaseModel):
-    shiftType : ShiftType
+class UserRotation(BaseModel):
+    id : StrictInt
     startDate : date
-    assignedUser : Optional[User] = None
+    endDate : date
+    generationPeriod : Optional[GenerationPeriod] = None
+    rotation : RotationType
+    ay : AcademicYear
 
-import pandas as pd
 
-if __name__ == '__main__':
-    shifts_csv = pd.read_csv('data/shifts.csv')
-    # shifts_csv['startTime'] = pd.to_timedelta(shifts_csv['startTime'])
-    shifts = [ShiftType(**r.to_dict()) for _, r in shifts_csv.iterrows()]
-    print(shifts)
+
