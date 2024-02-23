@@ -23,7 +23,7 @@ class RotationType(BaseModel):
     preBuffer : timedelta = timedelta(seconds=0)
     postBuffer : timedelta = timedelta(seconds=0)
     isDefault : bool = False
-    scheduleableShifts = Union[ScheduleableShiftsType, List[ShiftType]] = ScheduleableShiftsType.ALL
+    scheduleableShifts : Optional[Union[ScheduleableShiftsType, List[ShiftType]]] = None
 
 class GenerationPeriod(BaseModel):
     id : StrictInt
@@ -53,5 +53,8 @@ class UserRotation(BaseModel):
     rotation : RotationType
     ay : AcademicYear
 
-
+class Shift(BaseModel):
+    
+    shiftType : ShiftType
+    user : Optional[User] = None
 
